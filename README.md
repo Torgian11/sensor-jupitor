@@ -24,3 +24,15 @@ FOr database migrations, run the following:
 
 `docker compose exec sa-backend python manage.py migrate`
 
+### Notes
+
+You may need to run the following within the sa-frontend docker container due to a VITE error:
+
+
+```
+npm upgrade @nuxt/ui-templates
+```
+
+Note that you will need to compose back down and up after running this command.
+
+Link: https://github.com/nuxt/nuxt/issues/22383#issuecomment-1656540496
