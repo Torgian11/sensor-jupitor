@@ -15,14 +15,27 @@
       </v-list-item>
 
       <v-list-item>
-        <v-list-item-title>Actions</v-list-item-title>
+        <v-list-item-title v-if="!rail">Actions</v-list-item-title>
       </v-list-item>
       <v-divider></v-divider>
       <v-list density="compact" nav>
         <v-list-item>
           <v-menu offset-y :close-on-content-click="false">
             <template v-slot:activator="{ props }">
-              <v-btn color="primary" v-bind="props"> Upload Files </v-btn>
+              <v-tooltip anchor="end">
+                <template v-slot:activator="{ props: tooltipProps }">
+                  <v-btn
+                    v-if="rail"
+                    v-bind="{ ...props, ...tooltipProps }"
+                    icon="mdi-menu-down"
+                    color="primary"
+                  ></v-btn>
+                  <v-btn v-else v-bind="{ ...props, ...tooltipProps }" text
+                    >Menu</v-btn
+                  >
+                </template>
+                <span>Upload Files</span>
+              </v-tooltip>
             </template>
             <v-list>
               <v-list-item capture>
@@ -42,26 +55,116 @@
             </v-list>
           </v-menu>
         </v-list-item>
-        <v-list-item @click="fetchTCXFiles">
+        <v-list-item v-if="!rail" @click="fetchTCXFiles">
           <v-list-item-title>Fetch TCX Files</v-list-item-title>
         </v-list-item>
-        <v-list-item @click="fetchGPXFiles">
+        <v-list-item v-if="rail">
+          <v-tooltip anchor="end">
+            <template v-slot:activator="{ props }">
+              <v-btn
+                v-bind="props"
+                icon="mdi-cloud-download"
+                color="blue"
+                @click="fetchTCXFiles"
+              ></v-btn>
+            </template>
+            <span>Fetch TCX Files</span>
+          </v-tooltip>
+        </v-list-item>
+        <v-list-item v-if="!rail" @click="fetchGPXFiles">
           <v-list-item-title>Fetch GPX Files</v-list-item-title>
         </v-list-item>
-        <v-list-item @click="fetchTCXChart" :disabled="!tcxFiles.length">
-          <v-list-item-title>Fetch TCX Chart</v-list-item-title>
-        </v-list-item>
-        <v-list-item @click="fetchGPXChart" :disabled="!gpxFiles.length">
-          <v-list-item-title>Fetch GPX Chart</v-list-item-title>
+        <v-list-item v-if="rail">
+          <v-tooltip anchor="end">
+            <template v-slot:activator="{ props }">
+              <v-btn
+                v-bind="props"
+                icon="mdi-cloud-download"
+                color="green"
+                @click="fetchGPXFiles"
+              ></v-btn>
+            </template>
+            <span>Fetch GPX Files</span>
+          </v-tooltip>
         </v-list-item>
         <v-list-item
+          v-if="!rail"
+          @click="fetchTCXChart"
+          :disabled="!tcxFiles.length"
+        >
+          <v-list-item-title>Fetch TCX Chart</v-list-item-title>
+        </v-list-item>
+        <v-list-item v-if="rail">
+          <v-tooltip anchor="end">
+            <template v-slot:activator="{ props }">
+              <v-btn
+                v-bind="props"
+                icon="mdi-chart-line"
+                color="blue"
+                @click="fetchTCXChart"
+                :disabled="!tcxFiles.length"
+              ></v-btn>
+            </template>
+            <span>Fetch TCX Chart</span>
+          </v-tooltip>
+        </v-list-item>
+        <v-list-item
+          v-if="!rail"
+          @click="fetchGPXChart"
+          :disabled="!gpxFiles.length"
+        >
+          <v-list-item-title>Fetch GPX Chart</v-list-item-title>
+        </v-list-item>
+        <v-list-item v-if="rail">
+          <v-tooltip anchor="end">
+            <template v-slot:activator="{ props }">
+              <v-btn
+                v-bind="props"
+                icon="mdi-chart-line"
+                color="green"
+                @click="fetchGPXChart"
+                :disabled="!gpxFiles.length"
+              ></v-btn>
+            </template>
+            <span>Fetch GPX Chart</span>
+          </v-tooltip>
+        </v-list-item>
+        <v-list-item
+          v-if="!rail"
           @click="displayMap = !displayMap"
           :disabled="!chartPoints.length"
         >
           <v-list-item-title>Display TCX Map</v-list-item-title>
         </v-list-item>
-        <v-list-item @click="displayGPXMap = !displayGPXMap">
+        <v-list-item v-if="rail">
+          <v-tooltip anchor="end">
+            <template v-slot:activator="{ props }">
+              <v-btn
+                v-bind="props"
+                icon="mdi-map-marker"
+                color="blue"
+                @click="displayMap = !displayMap"
+                :disabled="!chartPoints.length"
+              ></v-btn>
+            </template>
+            <span>Display TCX Map</span>
+          </v-tooltip>
+        </v-list-item>
+        <v-list-item v-if="!rail" @click="displayGPXMap = !displayGPXMap">
           <v-list-item-title>Display GPX Map</v-list-item-title>
+        </v-list-item>
+        <v-list-item v-if="rail">
+          <v-tooltip anchor="end">
+            <template v-slot:activator="{ props }">
+              <v-btn
+                v-bind="props"
+                icon="mdi-map-marker"
+                color="green"
+                @click="displayGPXMap = !displayGPXMap"
+              ></v-btn>
+            </template>
+            <span>Display GPX Map</span>
+          </v-tooltip>
         </v-list-item>
       </v-list>
     </v-navigation-drawer>
@@ -89,9 +192,11 @@
 
         <v-row justify="center">
           <v-col cols="12" md="8">
-            <div :style="{ width: '100%', height: '400px' }">
-              <v-chart :option="chartOptions" autoresize />
-            </div>
+            <line-chart
+              v-if="selectedPoint"
+              :chart-data="chartData"
+              :chart-options="chartOptions"
+            />
           </v-col>
         </v-row>
 
@@ -113,78 +218,36 @@
 import { mdiChevronLeft } from "@mdi/js";
 import LeafletMap from "../components/LeafletMap.vue";
 import PointData from "@/components/PointData.vue";
-// import VueApexCharts from "vue3-apexcharts";
-import { use } from "echarts/core";
-import { CanvasRenderer } from "echarts/renderers";
-import { LineChart } from "echarts/charts";
-import {
-  TitleComponent,
-  TooltipComponent,
-  LegendComponent,
-  GridComponent,
-  MarkPointComponent,
-} from "echarts/components";
-import VChart, { THEME_KEY } from "vue-echarts";
-
 // import ExperimentalPage from "../components/ExperimentalPage.vue";
 import { debounce } from "lodash";
 import axios from "axios";
-
-use([
-  CanvasRenderer,
-  LineChart,
-  TitleComponent,
-  TooltipComponent,
-  LegendComponent,
-  GridComponent,
-  MarkPointComponent,
-]);
+import LineChart from "../components/LineChart.vue";
 
 export default {
   name: "HomePage",
   components: {
     LeafletMap,
+    LineChart,
     PointData,
-    VChart,
-    // VueApexCharts,
-    // ExperimentalPage,
-  },
-  provide: {
-    [THEME_KEY]: "light",
   },
   data() {
     return {
+      drawer: true,
+      selectedPoint: null,
+      chartData: {},
       chartOptions: {
-        xAxis: {
-          type: "category",
-          data: [],
-        },
-        yAxis: {
-          type: "value",
-        },
-        series: [
-          {
-            data: [],
-            type: "line",
-            markPoint: {
-              symbol: "circle",
-              symbolSize: 20,
-              itemStyle: {
-                color: "red",
-              },
-              data: [
-                // Initial marker position
-                { coord: [0, 0] },
-              ],
-            },
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
           },
-        ],
+        },
       },
       chartPoints: [],
       currentPointData: null,
       displayMap: false,
       displayGPXMap: false,
-      drawer: true,
       gpxFileToUpload: null,
       tcxFileToUpload: null,
       chartKey: 1,
@@ -302,22 +365,55 @@ export default {
         });
     },
 
-    updatePointData: debounce(function (pointData) {
-      this.currentPointData = pointData.point;
-      this.chartOptions.xAxis.data = this.chartPoints.map(
-        (item, index) => index
-      );
-      this.chartOptions.series[0].data = this.series[0].data;
-      this.updateMarkerPosition(pointData);
-    }, 300),
-    updateMarkerPosition(pointData) {
-      const markerX = pointData.index;
-      const markerY = pointData.point.distance;
-
-      this.chartOptions.series[0].markPoint.data = [
-        { coord: [markerX, markerY] },
-      ];
+    calculateDistance(p1, p2) {
+      console.log(p1, p2);
+      const x = p2.longitude - p1.longitude;
+      const y = p2.latitude - p1.latitude;
+      console.log(x, y);
+      return Math.sqrt(x * x + y * y);
     },
+
+    generateChartData() {
+      if (this.selectedPoint) {
+        const pointDistance = this.selectedPoint.distance;
+
+        // assuming this.polyline is an array of objects with distance property
+        const polylineData = this.chartPoints.map((point) => point.distance);
+        console.log(polylineData);
+        this.chartPoints = {
+          labels: polylineData,
+          datasets: [
+            {
+              label: "Distance",
+              backgroundColor: "#f87979",
+              data: polylineData,
+              pointRadius: 0,
+            },
+            {
+              label: "Selected Point",
+              backgroundColor: "#000",
+              data: [pointDistance],
+              pointRadius: 10,
+            },
+          ],
+        };
+        console.log(this.chartPoints);
+      }
+    },
+
+    updatePointData: debounce(function (pointData) {
+      this.selectedPoint = pointData.point;
+      this.generateChartData(pointData);
+    }, 300),
+
+    // updateMarkerPosition(pointData) {
+    //   const markerX = pointData.index;
+    //   const markerY = pointData.point.distance;
+
+    //   this.chartOptions.series[0].markPoint.data = [
+    //     { coord: [markerX, markerY] },
+    //   ];
+    // },
   },
 };
 </script>
