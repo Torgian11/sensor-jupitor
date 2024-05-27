@@ -171,11 +171,20 @@
 
     <v-main>
       <v-container fluid fill-height class="home-container">
-        <v-row>
+        <v-row v-if="tcxFiles.length">
           <v-col>
-            <div v-for="file in tcxFiles" :key="file.id">
-              Title: {{ file.title }}
-            </div>
+            <select v-model="selectedFileId" class="file-selector">
+              <option
+                v-for="(tcxFile, idx) in tcxFiles"
+                :key="tcxFile.id"
+                :value="tcxFile.tcx_data_id"
+              >
+                {{ tcxFile.title || "Untitled" + idx }}
+              </option>
+            </select>
+            <v-btn :disabled="!selectedFileId" @click="fetchTCXChart"
+              >Fetch Training Data</v-btn
+            >
           </v-col>
         </v-row>
 
@@ -194,7 +203,8 @@
           <v-col cols="12" md="8">
             <line-chart
               v-if="selectedPoint"
-              :chart-data="chartData"
+              ref="lineChart"
+              :chart-data="lineChartPoints"
               :chart-options="chartOptions"
             />
           </v-col>
@@ -214,6 +224,7 @@
     </v-main>
   </v-app>
 </template>
+
 <script>
 import { mdiChevronLeft } from "@mdi/js";
 import LeafletMap from "../components/LeafletMap.vue";
@@ -234,7 +245,6 @@ export default {
     return {
       drawer: true,
       selectedPoint: null,
-      chartData: {},
       chartOptions: {
         responsive: true,
         maintainAspectRatio: false,
@@ -243,8 +253,20 @@ export default {
             beginAtZero: true,
           },
         },
+        tooltips: {
+          callbacks: {
+            label: (tooltipItem) => {
+              return tooltipItem.datasetIndex === 1
+                ? `Point ${this.selectedPoint.idx + 1}: ${
+                    this.selectedPoint.distance
+                  }`
+                : `Point ${tooltipItem.index + 1}: ${tooltipItem.value}`;
+            },
+          },
+        },
       },
       chartPoints: [],
+      lineChartPoints: [],
       currentPointData: null,
       displayMap: false,
       displayGPXMap: false,
@@ -256,6 +278,7 @@ export default {
       gpxFiles: [],
       loading: false,
       rail: true,
+      selectedFileId: null,
       series: [
         {
           name: "Distance",
@@ -293,11 +316,12 @@ export default {
     async fetchTCXChart() {
       try {
         this.loading = true;
-        const firstFile = this.tcxFiles[5].tcx_data_id;
+        const firstFile = this.selectedFileId;
         const response = await axios.get(
           `/api/tcxdata/${firstFile}/chart-data`
         );
         this.chartPoints = JSON.parse(response.data.chart_data.position_data);
+        this.initChartData();
       } catch (error) {
         console.log(error);
       } finally {
@@ -366,54 +390,72 @@ export default {
     },
 
     calculateDistance(p1, p2) {
-      console.log(p1, p2);
       const x = p2.longitude - p1.longitude;
       const y = p2.latitude - p1.latitude;
-      console.log(x, y);
       return Math.sqrt(x * x + y * y);
     },
 
-    generateChartData() {
+    updateChartData() {
       if (this.selectedPoint) {
         const pointDistance = this.selectedPoint.distance;
+        const selectedIndex =
+          this.lineChartPoints.datasets[0].data.indexOf(pointDistance);
 
-        // assuming this.polyline is an array of objects with distance property
-        const polylineData = this.chartPoints.map((point) => point.distance);
-        console.log(polylineData);
-        this.chartPoints = {
-          labels: polylineData,
-          datasets: [
-            {
-              label: "Distance",
-              backgroundColor: "#f87979",
-              data: polylineData,
-              pointRadius: 0,
-            },
-            {
-              label: "Selected Point",
-              backgroundColor: "#000",
-              data: [pointDistance],
-              pointRadius: 10,
-            },
-          ],
-        };
-        console.log(this.chartPoints);
+        const updatedLineChartPoints = { ...this.lineChartPoints };
+
+        updatedLineChartPoints.datasets[0].pointBackgroundColor =
+          updatedLineChartPoints.datasets[0].data.map((distance, idx) => {
+            if (idx === selectedIndex) {
+              return "#000"; // Black
+            } else {
+              return "#f87979";
+            }
+          });
+        updatedLineChartPoints.datasets[1].data = [pointDistance];
+        this.lineChartPoints = updatedLineChartPoints;
+
+        this.$nextTick(() => {
+          if (this.$refs.lineChart?.chart) {
+            this.$refs.lineChart.chart.setActiveElements([
+              {
+                datasetIndex: 0,
+                index: selectedIndex,
+              },
+            ]);
+          }
+        });
       }
+    },
+
+    initChartData() {
+      const labels = this.chartPoints.map((_point, idx) => `Point ${idx + 1}`);
+      const polylineData = this.chartPoints.map((point) => point.distance);
+
+      this.lineChartPoints = {
+        labels: labels,
+        datasets: [
+          {
+            label: "Distance",
+            backgroundColor: "#f87979",
+            data: polylineData,
+            pointRadius: 0,
+            pointBackgroundColor: [],
+            pointHoverBackgroundColor: "#000", // black color when hovered
+          },
+          {
+            label: "Selected Point",
+            backgroundColor: "#000",
+            data: [],
+            pointRadius: 10,
+          },
+        ],
+      };
     },
 
     updatePointData: debounce(function (pointData) {
       this.selectedPoint = pointData.point;
-      this.generateChartData(pointData);
+      this.updateChartData(pointData);
     }, 300),
-
-    // updateMarkerPosition(pointData) {
-    //   const markerX = pointData.index;
-    //   const markerY = pointData.point.distance;
-
-    //   this.chartOptions.series[0].markPoint.data = [
-    //     { coord: [markerX, markerY] },
-    //   ];
-    // },
   },
 };
 </script>
@@ -435,4 +477,30 @@ export default {
 .map-container {
   height: 400px; /* Adjust as needed */
 }
+
+.file-selector {
+  width: 300px;
+  max-width: 300px;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+/* button[type="button"] {
+  width: 100%;
+  background-color: #4CAF50;
+  color: #fff;
+  padding: 14px 20px;
+  margin: 8px 0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button[type="button"]:hover {
+  background-color: #3e8e41;
+} */
 </style>

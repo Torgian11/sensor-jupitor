@@ -1,5 +1,11 @@
 <template>
-  <Line :chart-data="chartData" :chart-options="chartOptions" />
+  <Line
+    v-if="chartData"
+    ref="chart"
+    :data="chartData"
+    :options="chartOptions"
+  />
+  <div v-else>No chart data</div>
 </template>
 <script>
 import { defineComponent } from "vue";
@@ -31,11 +37,11 @@ export default defineComponent({
   props: {
     chartData: {
       type: Object,
-      required: true,
+      default: () => ({ labels: [], datasets: [] }),
     },
     chartOptions: {
       type: Object,
-      required: false,
+      default: null,
     },
   },
 });
