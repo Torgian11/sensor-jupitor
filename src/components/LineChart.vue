@@ -1,9 +1,10 @@
 <template>
   <Line
-    v-if="chartData"
+    v-if="allChartData"
     ref="chart"
-    :data="chartData"
+    :data="allChartData"
     :options="chartOptions"
+    :key="chartKey"
   />
   <div v-else>No chart data</div>
 </template>
@@ -42,6 +43,21 @@ export default defineComponent({
     chartOptions: {
       type: Object,
       default: null,
+    },
+  },
+  data() {
+    return {
+      allChartData: this.chartData,
+      chartKey: 1,
+    };
+  },
+  watch: {
+    chartData: {
+      handler(value) {
+        this.allChartData = { ...value };
+        this.allChartData.datasets[1].data = value.datasets[1].data;
+        console.log(this.allChartData);
+      },
     },
   },
 });

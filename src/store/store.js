@@ -6,8 +6,15 @@ export default createStore({
     theme: "light",
     token: null,
     user: null,
+    selectedChartFile: null,
   },
   mutations: {
+    setSelectedChartFile(state, chartFile) {
+      state.selectedChartFile = chartFile;
+    },
+    removeSelectedChartFile(state) {
+      state.selectedChartFile = null;
+    },
     setTheme(state, theme) {
       state.theme = theme;
       vuetify.theme.global.name.value = theme;
