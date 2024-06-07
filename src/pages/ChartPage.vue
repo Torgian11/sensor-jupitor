@@ -5,6 +5,7 @@
         <div v-if="displayMap || displayGPXMap" class="map-container">
           <leaflet-map
             :points="chartPoints"
+            :selected-point="selectedPoint"
             @update-point-data="updatePointData"
           />
         </div>
@@ -13,11 +14,13 @@
 
     <v-row justify="center">
       <v-col cols="12" md="8">
-        <line-chart
-          v-if="selectedPoint"
-          ref="lineChart"
+        <line-chart-d3
+          v-if="lineChartPoints"
           :chart-data="lineChartPoints"
           :chart-options="chartOptions"
+          :selected-point="selectedPoint"
+          :total-distance="totalDistance"
+          @point-hovered="handlePointHovered"
         />
       </v-col>
     </v-row>
@@ -52,14 +55,14 @@
 <script>
 import LeafletMap from "../components/LeafletMap.vue";
 import PointData from "@/components/PointData.vue";
-import LineChart from "../components/LineChart.vue";
+import LineChartD3 from "../components/LineChartD3.vue";
 import { debounce } from "lodash";
 import axios from "axios";
 export default {
   name: "ChartPage",
   components: {
     LeafletMap,
-    LineChart,
+    LineChartD3,
     PointData,
   },
   data() {
@@ -74,6 +77,11 @@ export default {
             beginAtZero: true,
           },
         },
+        interaction: {
+          mode: "index",
+          intersect: false,
+        },
+        spanGaps: true,
         tooltips: {
           callbacks: {
             label: (tooltipItem) => {
@@ -103,6 +111,7 @@ export default {
           data: [], // Initialize with empty data
         },
       ],
+      totalDistance: 0,
       warningDialog: false,
     };
   },
@@ -115,13 +124,9 @@ export default {
     console.log(chartInfo);
     this.chartType = chartInfo.type;
     this.currentChartId =
-      chartInfo.type === "tcx" ? chartInfo.tcx_data_id : chartInfo.id;
+      chartInfo.type === "tcx" ? chartInfo.tcx_data_id : chartInfo.gpx_data_id;
     try {
-      if (chartInfo.type === "tcx") {
-        this.fetchTCXChart();
-      } else {
-        this.fetchGPXChart();
-      }
+      this.fetchChartData(chartInfo.type);
     } catch (error) {
       console.log(error);
     }
@@ -136,39 +141,27 @@ export default {
       this.warningDialog = false;
       this.$router.push({ name: "Home" });
     },
-    async fetchTCXChart() {
+    async fetchChartData(extension) {
       try {
         this.loading = true;
-        const response = await axios.get(
-          `/api/tcxdata/${this.currentChartId}/chart-data`
-        );
-        this.chartPoints = JSON.parse(response.data.chart_data.position_data);
+        const url =
+          extension === "tcx"
+            ? `/api/tcxdata/${this.currentChartId}/chart-data`
+            : `/api/gpx-data/${this.currentChartId}/`;
+        const response = await axios.get(url);
+        this.chartPoints =
+          extension === "tcx"
+            ? JSON.parse(response.data.chart_data.position_data)
+            : response.data.position_data;
+
+        this.totalDistance = response.data.total_distance;
         if (!this.chartPoints?.length) {
           this.noDataAlert();
         } else {
           this.initChartData();
         }
       } catch (error) {
-        console.log(error);
-      } finally {
-        this.loading = false;
-      }
-    },
-    async fetchGPXChart() {
-      try {
-        this.loading = true;
-        const response = await axios.get(
-          `/api/gpx-files/${this.currentChartId}/`
-        );
-        this.chartPoints = response.data.chart_data;
-        // this.series[0].data = this.chartPoints.map((cp) => cp.distance);
-        if (!this.chartPoints?.length) {
-          this.noDataAlert();
-        } else {
-          this.initChartData();
-        }
-      } catch (error) {
-        console.log(error);
+        console.error(error);
       } finally {
         this.loading = false;
       }
@@ -178,24 +171,50 @@ export default {
         const labels = this.chartPoints.map(
           (_point, idx) => `Point ${idx + 1}`
         );
-        const polylineData = this.chartPoints.map((point) => point.distance);
+        const elevationData = this.chartPoints.map((point) => point.elevation);
+        const cadenceData = this.chartPoints.map((point) => {
+          return point.cadence;
+        });
+        const powerData = this.chartPoints.map((point) => point.power);
+        const heartRateData = this.chartPoints.map((point) => point.heart_rate);
+        console.log(cadenceData.includes(NaN));
 
         this.lineChartPoints = {
           labels: labels,
           datasets: [
             {
-              label: "Distance",
-              backgroundColor: "#f87979",
-              data: polylineData,
+              label: "Cadence",
+              data: cadenceData,
+              borderColor: "rgba(255, 0, 0, 1)",
+              borderWidth: 1,
               pointRadius: 0,
-              pointBackgroundColor: [],
-              pointHoverBackgroundColor: "#000", // black color when hovered
             },
             {
-              label: "Selected Point",
-              backgroundColor: "#000",
               data: [],
-              pointRadius: 10,
+            },
+            {
+              label: "Power",
+              data: powerData,
+              borderColor: "rgba(0, 255, 0, 1)",
+              borderWidth: 1,
+              pointRadius: 0,
+            },
+            {
+              label: "Heart Rate",
+              data: heartRateData,
+              borderColor: "rgba(0, 0, 255, 1)",
+              borderWidth: 1,
+              pointRadius: 0,
+            },
+            {
+              label: "Elevation",
+              backgroundColor: "rgba(128, 128, 128, 0.2)",
+              borderColor: "rgba(128, 128, 128, 1)",
+              borderWidth: 1,
+              data: elevationData,
+              fill: "end",
+              pointRadius: 0,
+              pointHoverBackgroundColor: "#000", // black color when hovered
             },
           ],
         };
@@ -206,6 +225,9 @@ export default {
           this.displayGPXMap = true;
         }
       }
+    },
+    handlePointHovered(value) {
+      console.log(value);
     },
     noDataAlert() {
       this.warningDialog = true;

@@ -1,15 +1,13 @@
 <template>
   <Line
-    v-if="allChartData"
-    ref="chart"
+    ref="lineChart"
     :data="allChartData"
     :options="chartOptions"
     :key="chartKey"
+    @chart:render="onChartRender"
   />
-  <div v-else>No chart data</div>
 </template>
 <script>
-import { defineComponent } from "vue";
 import { Line } from "vue-chartjs";
 import {
   Chart as ChartJS,
@@ -32,7 +30,7 @@ ChartJS.register(
   CategoryScale
 );
 
-export default defineComponent({
+export default {
   name: "LineChart",
   components: { Line },
   props: {
@@ -60,5 +58,25 @@ export default defineComponent({
       },
     },
   },
-});
+  methods: {
+    onChartRender(chart) {
+      chart.canvas.addEventListener("mousemove", this.handleMouseMove);
+    },
+    handleMouseMove(event) {
+      console.log(event, "mouse move event");
+      const chart = this.$refs.lineChart.chartInstance;
+      const elements = chart.getElementsAtEventForMode(
+        event,
+        "nearest",
+        { intersect: true },
+        true
+      );
+      if (elements.length > 0) {
+        const index = elements[0].index;
+        const pointData = this.chartData.datasets[0].data[index];
+        this.$emit("point-hovered", pointData);
+      }
+    },
+  },
+};
 </script>

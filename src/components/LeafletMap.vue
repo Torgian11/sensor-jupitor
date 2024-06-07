@@ -16,11 +16,16 @@ export default {
       type: Array,
       default: () => [],
     },
+    selectedPoint: {
+      type: Object,
+      default: () => null,
+    },
   },
   emits: ["update-point-data"],
   data() {
     return {
       currentMarkers: [],
+      newMarker: null,
       frozen: false,
       myIcon: L.icon({
         iconUrl: markerIcon,
@@ -28,6 +33,13 @@ export default {
         iconAnchor: [12, 41],
       }),
     };
+  },
+  watch: {
+    selectedPoint(newVal) {
+      if (newVal) {
+        this.addIconToMap(newVal);
+      }
+    },
   },
   mounted() {
     this.initMap();
@@ -43,6 +55,13 @@ export default {
     this.handleMapEvents(latlngs);
   },
   methods: {
+    addIconToMap(pointData) {
+      if (this.newMarker) {
+        this.map.removeLayer(this.newMarker);
+      }
+      console.log(pointData);
+      // this.newMarker = L.marker([pointData.lat, pointData.lng]).addTo(this.map);
+    },
     addMarkers(data, latlngs) {
       const numMarkers = 10;
       const startPoint = data[0];
@@ -84,6 +103,10 @@ export default {
             mark.latitude = nearestPoint.latitude;
             mark.longitude = nearestPoint.longitude;
             mark.distance = nearestPoint.distance;
+            mark.elevation = nearestPoint.elevation;
+            mark.cadence = nearestPoint.cadence;
+            mark.power = nearestPoint.power;
+            mark.speed = nearestPoint.speed;
             mark.bindPopup(this.createPopupContent(nearestPoint));
             mark.on("popupclose", () => {
               this.frozen = false;
@@ -252,13 +275,38 @@ export default {
       };
       L.control.center({ position: "topleft" }).addTo(this.map);
     },
-
+    //     cadence
+    // :
+    // 74
+    // distance
+    // :
+    // 3.7037742506826405
+    // elevation
+    // :
+    // 166.4
+    // heart_rate
+    // :
+    // 127
+    // latitude
+    // :
+    // 35.713725
+    // longitude
+    // :
+    // 139.299307
+    // power
+    // :
+    // 283
+    // speed
+    // :
+    // 13.333587302457506
     createPopupContent(marker) {
       const popupContent = `
           <b>Point</b><br>
           <p>Latitude: ${marker.latitude}</p>
           <p>Longitude: ${marker.longitude}</p>
-          <p>Distance: ${marker.distance} meters</P.<br>
+          <p>Distance: ${marker.distance} meters</p>
+          <p>Elevation: ${marker.elevation} meters</p>
+            
         `;
       return popupContent;
     },
