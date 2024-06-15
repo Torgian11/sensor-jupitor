@@ -4,6 +4,7 @@ import HomePage from "./pages/HomePage.vue";
 import LoginPage from "./pages/LoginPage.vue";
 import TrainingPlanPage from "./pages/TrainingPlanPage.vue";
 import ChartPage from "./pages/ChartPage.vue";
+import ViewTrainingPlanPage from "./pages/ViewTrainingPlansPage.vue";
 
 const routes = [
   {
@@ -18,9 +19,14 @@ const routes = [
     component: LoginPage,
   },
   {
-    path: "/training-plan",
-    name: "TrainingPlan",
+    path: "/planner",
+    name: "Planner",
     component: TrainingPlanPage,
+  },
+  {
+    path: "/view-training-plan",
+    name: "ViewTrainingPlan",
+    component: ViewTrainingPlanPage,
   },
   {
     path: "/chart-page",

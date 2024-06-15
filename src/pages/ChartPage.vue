@@ -1,37 +1,29 @@
 <template>
   <div v-if="chartPoints && chartPoints.length">
-    <v-row>
-      <v-col cols="12">
-        <div v-if="displayMap || displayGPXMap" class="map-container">
-          <leaflet-map
-            :points="chartPoints"
-            :selected-point="selectedPoint"
-            @update-point-data="updatePointData"
-          />
-        </div>
-      </v-col>
-    </v-row>
+    <div v-if="displayMap || displayGPXMap" class="map-container">
+      <leaflet-map
+        :points="chartPoints"
+        :selected-point="selectedPointForMap"
+        @update-point-data="updatePointData"
+      />
+    </div>
+    <div class="chart-container">
+      <cycle-animation :chart-points="chartPoints" />
+    </div>
+    <!-- <div class="chart-container">
+      <line-chart-d3
+        v-if="lineChartPoints"
+        :chart-data="lineChartPoints"
+        :chart-options="chartOptions"
+        :selected-point="selectedPointForChart"
+        :total-distance="totalDistance"
+        @point-hovered="handlePointHovered"
+      />
+    </div> -->
 
-    <v-row justify="center">
-      <v-col cols="12" md="8">
-        <line-chart-d3
-          v-if="lineChartPoints"
-          :chart-data="lineChartPoints"
-          :chart-options="chartOptions"
-          :selected-point="selectedPoint"
-          :total-distance="totalDistance"
-          @point-hovered="handlePointHovered"
-        />
-      </v-col>
-    </v-row>
-
-    <v-row justify="center">
-      <v-col cols="12" md="8">
-        <div>
-          <point-data :point-data="selectedPoint" />
-        </div>
-      </v-col>
-    </v-row>
+    <div class="info-container">
+      <point-data :point-data="selectedPointData" />
+    </div>
   </div>
   <div v-else>No data</div>
   <v-overlay :model-value="loading" class="align-center justify-center">
@@ -58,9 +50,12 @@ import PointData from "@/components/PointData.vue";
 import LineChartD3 from "../components/LineChartD3.vue";
 import { debounce } from "lodash";
 import axios from "axios";
+import CycleAnimation from "../components/CycleAnimation.vue";
+
 export default {
   name: "ChartPage",
   components: {
+    CycleAnimation,
     LeafletMap,
     LineChartD3,
     PointData,
@@ -68,7 +63,6 @@ export default {
   data() {
     return {
       drawer: true,
-      selectedPoint: null,
       chartOptions: {
         responsive: true,
         maintainAspectRatio: false,
@@ -113,6 +107,9 @@ export default {
       ],
       totalDistance: 0,
       warningDialog: false,
+      selectedPointData: null,
+      selectedPointForChart: null,
+      selectedPointForMap: null,
     };
   },
   mounted() {
@@ -121,7 +118,7 @@ export default {
       this.$router.push({ name: "Home" });
       return;
     }
-    console.log(chartInfo);
+
     this.chartType = chartInfo.type;
     this.currentChartId =
       chartInfo.type === "tcx" ? chartInfo.tcx_data_id : chartInfo.gpx_data_id;
@@ -177,7 +174,7 @@ export default {
         });
         const powerData = this.chartPoints.map((point) => point.power);
         const heartRateData = this.chartPoints.map((point) => point.heart_rate);
-        console.log(cadenceData.includes(NaN));
+        const pointLatLngData = this.chartPoints.map((point) => point);
 
         this.lineChartPoints = {
           labels: labels,
@@ -216,6 +213,10 @@ export default {
               pointRadius: 0,
               pointHoverBackgroundColor: "#000", // black color when hovered
             },
+            {
+              label: "Point Data",
+              data: pointLatLngData,
+            },
           ],
         };
 
@@ -227,14 +228,16 @@ export default {
       }
     },
     handlePointHovered(value) {
-      console.log(value);
+      this.selectedPointForMap = value;
+      this.updateChartData(value);
     },
     noDataAlert() {
       this.warningDialog = true;
     },
-    updateChartData() {
-      if (this.selectedPoint) {
-        const pointDistance = this.selectedPoint.distance;
+    updateChartData(pointData) {
+      this.selectedPointData = pointData;
+      if (pointData) {
+        const pointDistance = pointData.distance;
         const selectedIndex =
           this.lineChartPoints.datasets[0].data.indexOf(pointDistance);
 
@@ -263,9 +266,12 @@ export default {
         });
       }
     },
-    updatePointData: debounce(function (pointData) {
-      this.selectedPoint = pointData.point;
-      this.updateChartData(pointData);
+    updatePointData: debounce(function (pointData, options) {
+      if (options.fromUser) {
+        this.selectedPointForChart = pointData;
+        this.selectedPointData = pointData;
+        this.updateChartData(pointData.point);
+      }
     }, 300),
   },
 };
@@ -281,12 +287,30 @@ export default {
   margin-top: 60px;
 }
 
-.home-container {
-  padding: 20px;
+.map-container {
+  position: relative;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
 }
 
-.map-container {
-  height: 400px; /* Adjust as needed */
+.chart-container {
+  background-color: rgba(255, 255, 255, 0.85);
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 400px;
+}
+
+.info-container {
+  position: absolute;
+  background-color: white;
+  top: 0;
+  right: 0;
+  width: 200px; /* or whatever width you want the info section to be */
+  height: fit-content;
 }
 
 .file-selector {

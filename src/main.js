@@ -9,7 +9,7 @@ import App from "./App.vue";
 import "vuetify/dist/vuetify.min.css";
 import "@mdi/font/css/materialdesignicons.css";
 
-const token = localStorage.getItem("token");
+const token = window.sessionStorage.getItem("token");
 
 async function verifyToken(token) {
   try {

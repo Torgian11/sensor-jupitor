@@ -24,34 +24,72 @@ export default {
       default: 0,
     },
   },
+  data() {
+    return {
+      xScale: null,
+      yScale: null,
+    };
+  },
   mounted() {
-    console.log(this.chartData);
     if (this.chartData.labels.length && this.chartData.datasets.length) {
       this.renderChart();
     }
   },
+  watch: {
+    selectedPoint(newPoint) {
+      this.updateChart(newPoint);
+    },
+  },
   methods: {
+    updateChart(pointData) {
+      if (!pointData) return;
+      const index = this.chartData.labels.findIndex((label) =>
+        label.includes(pointData.index)
+      );
+      if (index < 0) return;
+      const chart = d3.select(`#${this.chartId} svg`);
+      chart.selectAll(".vertical-line").remove();
+
+      chart
+        .append("line")
+        .attr("class", "vertical-line")
+        .attr("id", "selectedLine")
+        .attr("x1", this.xScale(index))
+        .attr("x2", this.xScale(index))
+        .attr("y1", 40)
+        .attr("y2", 380)
+        .style("stroke", "orange")
+        .style("stroke-width", 2)
+        .style("opacity", 0.75);
+
+      const line = document.getElementById("selectedLine");
+      const xCoord = line.getAttribute("x1");
+      const viewPort = document.getElementById("svgChart");
+      const viewportWidth = viewPort.getBoundingClientRect();
+      const scrollPosition = xCoord - viewportWidth.width / 2;
+      viewPort.scrollRight = scrollPosition;
+    },
     renderChart() {
       const margin = { top: 10, right: 30, bottom: 30, left: 60 };
-      const chartWidth = parseInt(this.totalDistance / 100);
-      const wrapperWidth = document.getElementById(this.chartId).clientWidth;
-      const width = Math.max(chartWidth, wrapperWidth);
+      const wrapperWidth = window.innerWidth;
+      const width = wrapperWidth;
       const height = 400 - margin.top - margin.bottom;
 
       const svg = d3
         .select(`#${this.chartId}`)
         .append("svg")
-        .attr("width", width + 100)
+        .attr("id", "svgChart")
+        .attr("width", "100%")
         .attr("height", height + 30)
         .append("g")
         .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
-      const xScale = d3
+      this.xScale = d3
         .scaleLinear()
         .domain([0, this.chartData.labels.length - 1])
         .range([0, width]);
 
-      const yScale = d3
+      this.yScale = d3
         .scaleLinear()
         .domain([
           0,
@@ -64,15 +102,15 @@ export default {
       svg
         .append("g")
         .attr("transform", `translate(0, ${height})`)
-        .call(d3.axisBottom(xScale));
+        .call(d3.axisBottom(this.xScale));
 
-      svg.append("g").call(d3.axisLeft(yScale));
+      svg.append("g").call(d3.axisLeft(this.yScale));
 
       const elevationLine = d3
         .area()
-        .x((d, i) => xScale(i))
+        .x((d, i) => this.xScale(i))
         .y0(height)
-        .y1((d) => yScale(d));
+        .y1((d) => this.yScale(d));
 
       svg
         .append("path")
@@ -84,21 +122,24 @@ export default {
         .append("rect")
         .attr("x", 0)
         .attr("y", 0)
-        .attr("width", width)
+        .attr("width", "100%")
         .attr("height", height)
         .attr("fill", "transparent")
         .on("mouseover", (event) => {
           const [x] = d3.pointer(event, svg.node());
-          const i = Math.round(xScale.invert(x));
+          const i = Math.round(this.xScale.invert(x));
 
+          console.log(this.chartData);
           const point = {
             cadence: this.chartData.datasets[0].data[i],
             elevation: this.chartData.datasets[4].data[i],
             heartRate: this.chartData.datasets[3].data[i],
             power: this.chartData.datasets[2].data[i],
+            latitude: this.chartData.datasets[5].data[i].latitude,
+            longitude: this.chartData.datasets[5].data[i].longitude,
           };
 
-          this.displayTooltip(svg, point, x, yScale(point.elevation));
+          this.displayTooltip(svg, point, x, this.yScale(point.elevation));
         })
         .on("mouseout", () => {
           svg.selectAll(".tooltip").remove();
@@ -125,8 +166,8 @@ export default {
               "d",
               d3
                 .line()
-                .x((_d, i) => xScale(i))
-                .y((d) => yScale(d))
+                .x((_d, i) => this.xScale(i))
+                .y((d) => this.yScale(d))
             );
         }
       });
@@ -218,7 +259,7 @@ export default {
         .attr("y", 40)
         .text(`Power: ${point.power}`);
 
-      this.$emit("point-hovered", point);
+      this.$emit("point-hovered", point, { fromUser: true });
     },
   },
 };
@@ -232,5 +273,11 @@ export default {
   width: 100%;
   height: 400px;
   overflow: auto;
+}
+
+.legend {
+  position: absolute;
+  top: 0;
+  right: 0;
 }
 </style>

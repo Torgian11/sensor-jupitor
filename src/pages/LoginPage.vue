@@ -37,25 +37,22 @@ import { ref } from "vue";
 import axios from "axios";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
+import login from "../utilities/loginService";
+// import CryptoJS from "crypto-js";
 
 export default {
   name: "LoginPage",
   setup() {
     const username = ref("");
     const password = ref("");
+    // const hashedPassword = CryptoJS.SHA256(password.value).toString();
     const error = ref(null);
     const store = useStore();
     const router = useRouter();
 
     const handleSubmit = async () => {
       try {
-        const response = await axios.post("login/", {
-          username: username.value,
-          password: password.value,
-        });
-        const token = response.data.token;
-        const user = response.data.user;
-        console.log(user);
+        const { token, user } = await login(username.value, password.value);
         store.commit("setToken", token);
         store.commit("setUser", user);
         axios.defaults.headers.common["Authorization"] =
@@ -63,7 +60,7 @@ export default {
 
         router.push("/");
       } catch (e) {
-        error.value = e.response.data.error;
+        error.value = e;
       }
     };
 

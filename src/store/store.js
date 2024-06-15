@@ -21,11 +21,11 @@ export default createStore({
     },
     setToken(state, token) {
       state.token = token;
-      localStorage.setItem("token", token);
+      window.sessionStorage.setItem("token", token);
     },
     removeToken(state) {
       state.token = null;
-      localStorage.removeItem("token");
+      window.sessionStorage.removeItem("token");
     },
     setUser(state, user) {
       state.user = user;

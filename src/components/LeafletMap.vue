@@ -7,7 +7,6 @@
 <script>
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
 
 export default {
   name: "LeafletMap",
@@ -28,7 +27,7 @@ export default {
       newMarker: null,
       frozen: false,
       myIcon: L.icon({
-        iconUrl: markerIcon,
+        iconUrl: require("leaflet/dist/images/marker-icon.png"),
         iconSize: [25, 41],
         iconAnchor: [12, 41],
       }),
@@ -59,8 +58,17 @@ export default {
       if (this.newMarker) {
         this.map.removeLayer(this.newMarker);
       }
-      console.log(pointData);
-      // this.newMarker = L.marker([pointData.lat, pointData.lng]).addTo(this.map);
+      this.newMarker = L.marker([
+        pointData.latitude,
+        pointData.longitude,
+        {
+          icon: L.divIcon({
+            className: "bicycle-icon",
+            html: `<img class="bicycle-icon" src="${require("../assets/bicycle_icon.svg")}" />`,
+            iconAnchor: [15, 41],
+          }),
+        },
+      ]).addTo(this.map);
     },
     addMarkers(data, latlngs) {
       const numMarkers = 10;
@@ -209,9 +217,21 @@ export default {
         this.frozen = false;
       });
 
+      this.map.on("zoomend", function () {
+        if (this.newMarker) {
+          this.newMarker.removeFrom(this.map);
+          this.map.removeLayer(this.newMarker);
+          this.newMarker = null;
+        }
+      });
+
       this.map.on("mousemove", (e) => {
         if (this.frozen) return;
-
+        if (this.newMarker) {
+          this.newMarker.removeFrom(this.map);
+          this.map.removeLayer(this.newMarker);
+          this.newMarker = null;
+        }
         const mouseLatLng = e.latlng;
         const closestPoint = polyline.closestLayerPoint(
           this.map.latLngToLayerPoint(mouseLatLng)
@@ -229,10 +249,14 @@ export default {
           if (dist < 50) {
             hoverIcon.setLatLng(this.map.layerPointToLatLng(closestPoint));
             hoverIcon.addTo(this.map);
-            this.$emit("update-point-data", {
-              point: this.points[closestDataPointIndex],
-              index: closestDataPointIndex,
-            });
+            this.$emit(
+              "update-point-data",
+              {
+                point: this.points[closestDataPointIndex],
+                index: closestDataPointIndex,
+              },
+              { fromUser: true }
+            );
           } else {
             hoverIcon.removeFrom(this.map);
           }
@@ -257,48 +281,6 @@ export default {
 
       L.control.scale().addTo(this.map);
     },
-
-    addCenterControl(latlngs) {
-      L.Control.Center = L.Control.extend({
-        onAdd: function (map) {
-          const button = L.DomUtil.create("button");
-          button.innerHTML = "Center Map";
-          button.onclick = function () {
-            map.fitBounds(latlngs); // Fit to all GPS points
-          };
-          return button;
-        },
-      });
-
-      L.control.center = function (opts) {
-        return new L.Control.Center(opts);
-      };
-      L.control.center({ position: "topleft" }).addTo(this.map);
-    },
-    //     cadence
-    // :
-    // 74
-    // distance
-    // :
-    // 3.7037742506826405
-    // elevation
-    // :
-    // 166.4
-    // heart_rate
-    // :
-    // 127
-    // latitude
-    // :
-    // 35.713725
-    // longitude
-    // :
-    // 139.299307
-    // power
-    // :
-    // 283
-    // speed
-    // :
-    // 13.333587302457506
     createPopupContent(marker) {
       const popupContent = `
           <b>Point</b><br>
@@ -320,12 +302,15 @@ export default {
       const R = 6371; // radius of the Earth in km
       const dLat = this.deg2rad(lat2 - lat1);
       const dLon = this.deg2rad(lon2 - lon1);
+      const lat1Rad = this.deg2rad(lat1);
+      const lat2Rad = this.deg2rad(lat2);
+
       const a =
         Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(this.deg2rad(lat1)) *
-          Math.cos(this.deg2rad(lat2)) *
+        Math.sin(dLon / 2) *
           Math.sin(dLon / 2) *
-          Math.sin(dLon / 2);
+          Math.cos(lat1Rad) *
+          Math.cos(lat2Rad);
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       const distance = R * c;
       return distance;
@@ -351,7 +336,7 @@ export default {
 
 <style scoped>
 #map {
-  height: 400px;
+  height: 100vh;
 }
 
 :deep(.leaflet-marker-icon > .bicycle-icon) {

@@ -3567,6 +3567,11 @@ cross-spawn@^7.0.0, cross-spawn@^7.0.2, cross-spawn@^7.0.3:
     shebang-command "^2.0.0"
     which "^2.0.1"
 
+crypto-js@^4.2.0:
+  version "4.2.0"
+  resolved "https://nexus.eitccorp.com/repository/npm-global/crypto-js/-/crypto-js-4.2.0.tgz"
+  integrity sha512-KALDyEYgpY+Rlob/iriUtjV6d5Eq+Y191A5g4UqLAi8CyGP9N1+FdVbkc1SxKc2r4YAYqG8JzO2KGL+AizD70Q==
+
 css-declaration-sorter@^6.3.1:
   version "6.4.1"
   resolved "https://nexus.eitccorp.com/repository/npm-global/css-declaration-sorter/-/css-declaration-sorter-6.4.1.tgz"
@@ -4819,6 +4824,11 @@ follow-redirects@^1.0.0, follow-redirects@^1.15.6:
   version "1.15.6"
   resolved "https://nexus.eitccorp.com/repository/npm-global/follow-redirects/-/follow-redirects-1.15.6.tgz"
   integrity sha512-wWN62YITEaOpSK584EZXJafH1AGpO8RVgElfkuXbTOrPX4fIfOyEpW/CsiNd8JdYrAoOvafRTOEnvsO++qCqFA==
+
+font-awesome@^4.7.0:
+  version "4.7.0"
+  resolved "https://nexus.eitccorp.com/repository/npm-global/font-awesome/-/font-awesome-4.7.0.tgz"
+  integrity sha512-U6kGnykA/6bFmg1M/oT9EkFeIYv7JlX3bozwQJWiiLz6L0w3F5vBVPxHlwyX/vtNq1ckcpRKOB9f2Qal/VtFpg==
 
 foreground-child@^3.1.0:
   version "3.1.1"
@@ -9014,6 +9024,11 @@ vue-axios@3.5.2:
   resolved "https://nexus.eitccorp.com/repository/npm-global/vue-axios/-/vue-axios-3.5.2.tgz"
   integrity sha512-GP+dct7UlAWkl1qoP3ppw0z6jcSua5/IrMpjB5O8bh089iIiJ+hdxPYH2NPEpajlYgkW5EVMP95ttXWdas1O0g==
 
+vue-cal@^4.8.1:
+  version "4.8.1"
+  resolved "https://nexus.eitccorp.com/repository/npm-global/vue-cal/-/vue-cal-4.8.1.tgz"
+  integrity sha512-qe0jSDmbzdKF3/MSTPcHSJMOovav4MwmXtgs1n7jkI345zAtfErQVv4uFEVXg1rD62sBi1qWflYRUKy1mzQapg==
+
 vue-chartjs@^5.3.1:
   version "5.3.1"
   resolved "https://nexus.eitccorp.com/repository/npm-global/vue-chartjs/-/vue-chartjs-5.3.1.tgz"
@@ -9071,7 +9086,7 @@ vue-template-es2015-compiler@^1.9.0:
   resolved "https://nexus.eitccorp.com/repository/npm-global/vue-template-es2015-compiler/-/vue-template-es2015-compiler-1.9.1.tgz"
   integrity sha512-4gDntzrifFnCEvyoO8PqyJDmguXgVPxKiIxrBKjIowvL9l+N66196+72XVYR8BBf1Uv1Fgt3bGevJ+sEmxfZzw==
 
-vue@*, "vue@^2 || ^3.2.13", "vue@^3.0.0 || ^2.0.0", "vue@^3.0.0-0 || ^2.7.0", vue@^3.2.0, vue@^3.2.13, vue@^3.3.0, "vue@> 3.0.0", vue@3.4.27:
+vue@*, "vue@^2 || ^3.2.13", "vue@^2.6.14 || ^3.2.0", "vue@^3.0.0 || ^2.0.0", "vue@^3.0.0-0 || ^2.7.0", vue@^3.2.0, vue@^3.2.13, vue@^3.3.0, "vue@> 3.0.0", vue@3.4.27:
   version "3.4.27"
   resolved "https://nexus.eitccorp.com/repository/npm-global/vue/-/vue-3.4.27.tgz"
   integrity sha512-8s/56uK6r01r1icG/aEOHqyMVxd1bkYcSe9j8HcKtr/xTOFWvnzIVTehNW+5Yt89f+DLBe4A569pnZLS5HzAMA==
